@@ -12,14 +12,15 @@
 DHT dht(DHTPIN, DHTTYPE);                                                           
 
 static byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};                         
-static byte ip[] = {192, 168, 0, 95};                                         
+//static byte ip[] = {192, 168, 0, 95};                                         
 static byte ip_dns[] = {192, 168, 1, 1};                                          
 static byte ip_gateway[] = { 192, 168, 0, 1};
 static byte subnet[] = {255, 255, 255, 0 };
 
-EthernetServer server(80);  // Agregar un servidor Ethernet en el puerto 80 (HTTP)
+EthernetServer server(80);  
+IPAddress ip(192, 168, 0, 95);
 
-// ... (el resto de tu código) ...
+
 
 /*
 static byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};                         
@@ -202,8 +203,9 @@ void pduReceived() {
 
 void setup() {
   dht.begin();
-  Ethernet.begin(mac, ip, ip_dns, ip_gateway, subnet);
-  api_status = Agentuino.begin();             
+  Ethernet.begin(mac, ip,ip_dns, ip_gateway, subnet);
+  api_status = Agentuino.begin();      
+  server.begin();       
   pinMode(pinLed, OUTPUT);           
  
   if ( api_status == SNMP_API_STAT_SUCCESS ) {
@@ -214,16 +216,17 @@ void setup() {
   delay(10);
 }
 void loop() { 
-  Agentuino.listen();                                      
+  Agentuino.listen();         
+   EthernetClient client = server.available();                             
   if (millis() - prevMillis > 2000) {
     temperature = dht.readTemperature();
     current = deltaCurrent();
     humidity = dht.readHumidity();
     prevMillis = millis();
+   
   }
 
-  // Agregar código para manejar las solicitudes HTTP
-  EthernetClient client = server.available();
+  // solicitudes HTTP
   if (client) {
     String request = client.readStringUntil('\r');
     client.println("HTTP/1.1 200 OK");
@@ -241,21 +244,10 @@ void loop() {
     client.println("<!DOCTYPE HTML>");
     client.println("<html>");
     client.println("<body>");
-    client.println("<a href=\"/LED=ON\">Prender LED</a>");
-    client.println("<a href=\"/LED=OFF\">Apagar LED</a>");
+    client.println("<a href=\"/LED=ON\">LED ON</a>");
+    client.println("<a href=\"/LED=OFF\">LED OFF</a>");
 
-    // Enviar los datos de los sensores en la respuesta HTML
-    client.print("<p>Temperatura: ");
-    client.print(temperature);
-    client.println(" &#8451;</p>");
 
-    client.print("<p>Humedad: ");
-    client.print(humidity);
-    client.println(" %</p>");
-
-    client.print("<p>Corriente: ");
-    client.print(current);
-    client.println(" A</p>");
 
     client.println("</body>");
     client.println("</html>");
@@ -263,4 +255,5 @@ void loop() {
     delay(1);
     client.stop();
   }
+  
 }
